@@ -100,7 +100,7 @@ struct Player {
             spctrBase =  mem::Read<uint64_t>(OFF_REGION + OFF_ENTITY_LIST + ((spctrIndex & 0xFFFF) << 5), "Spectator Base");
             plyrDataTable = mem::Read<int>(base + OFF_NAMEINDEX, "Player Data Table");
             spectators = mem::Read<uint64_t>(OFF_REGION + OFF_SPECTATOR_LIST, "spectators");
-            spctrIndex = mem::Read<int>(spectators + plyrDataTable * 8 + 0x974, "Spectator Index");
+            spctrIndex = mem::Read<int>(spectators + plyrDataTable * 8 + OFF_SPECTATOR_LIST_ARRAY, "Spectator Index");
             name = mem::ReadString(base + OFF_NAME, 1024, "Player name");
             teamNumber = mem::Read<int>(base + OFF_TEAM_NUMBER, "Player teamNumber");
             currentHealth = mem::Read<int>(base + OFF_CURRENT_HEALTH, "Player currentHealth");
@@ -156,7 +156,7 @@ struct Player {
         };
         std::array<float, 3> glowColorRGB = { 0, 0, 0 };
         if (!isVisible) {
-            settingIndex = 65;
+            settingIndex = 75;
             glowColorRGB = { 0.5, 0.5, 0.5 }; // grey
         } else if (health >= 205) {
             settingIndex = 66;
@@ -189,6 +189,17 @@ struct Player {
         long ptrLong = base + OFF_LAST_VISIBLE_TIME;
         float result = mem::Read<float>(ptrLong, "getLastVisibleTime");
         return result;
+    }
+    bool IsSpectating() {
+        if (!dead)
+            return false;
+        uint64_t SpectatorList = mem::Read<uint64_t>(OFF_REGION + OFF_SPECTATOR_LIST, "SpectatorList");
+        int PlayerData = mem::Read<int>(base + 0x38, "playerData");
+        int SpecIndex = mem::Read<int>(SpectatorList + PlayerData * 8 + 0x974, "spectatorIndex");
+        uint64_t SpectatorAddr = mem::Read<uint64_t>(OFF_REGION + OFF_ENTITY_LIST + ((SpecIndex & 0xFFFF) << 5), "spectator Addy");
+        if (SpectatorAddr == lp->base)
+            return true;
+        return false;
     }
     bool isVisible()
     {
